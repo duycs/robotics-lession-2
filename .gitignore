@@ -1,0 +1,18 @@
+# Build directory & binary artifacts
+build/
+bin/
+lib/
+*.o
+*.a
+*.dylib
+*.so
+*.app
+*.dSYM/
+TowerDefenseCHAI3D
+
+# System & IDE files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
