@@ -18,7 +18,7 @@ cd build
 # Cấu hình CMake nếu chưa cấu hình
 if [ ! -f "Makefile" ]; then
     echo "[1/3] Cau hinh CMake..."
-    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release ..
 fi
 
 # Biên dịch chương trình
