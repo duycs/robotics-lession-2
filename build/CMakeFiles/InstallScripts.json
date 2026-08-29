@@ -1,0 +1,13 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/duycs/Projects/github/robotics-lession-2/build/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/extras/GLFW/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/examples/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/examples/GLFW/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/utils/cmake_install.cmake",
+		"/Users/duycs/Projects/github/robotics-lession-2/build/external/chai3d/utils/CLI/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
