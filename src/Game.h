@@ -44,11 +44,13 @@ private:
     std::string m_assetsDir;
 
     Turret m_turret;
-    Monster m_monster;
+    Monster m_monster;     // Red Monster
+    Monster m_monsterBlue; // Blue Monster
     std::vector<Bullet*> m_bullets;
 
     chai3d::cVector3d m_turretPos;
-    chai3d::cVector3d m_monsterSpawnPos;
+    chai3d::cVector3d m_monsterSpawnPos;     // Red Monster Spawn
+    chai3d::cVector3d m_blueMonsterSpawnPos; // Blue Monster Spawn
     chai3d::cVector3d m_destinationPos;
 
     // Ground plane & destination visual objects

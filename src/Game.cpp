@@ -80,7 +80,8 @@ void Game::init(cWorld* world, cCamera* camera, const string& assetsDir) {
     setupScene();
 
     m_turret.init(m_world, m_assetsDir);
-    m_monster.init(m_world);
+    m_monster.init(m_world, false);     // Red Monster
+    m_monsterBlue.init(m_world, true);  // Electric Blue Monster
 
     // Initialize 20 bullet instances in bullet pool
     for (int i = 0; i < 20; ++i) {
@@ -263,14 +264,18 @@ void Game::randomizePlacement() {
 
     m_destinationPos.set(0.0, -7.0, 0.0);
 
-    // 2. Monster Spawn Point randomly across the opposite side / top area: X in [-8, 8], Y in [11, 14]
+    // 2. Red Monster Spawn Point randomly across top area: X in [-8, 8], Y in [11, 14]
     double mx = -8.0 + (rand() % 1600) / 100.0;
     double my = 11.0 + (rand() % 300) / 100.0;
     m_monsterSpawnPos.set(mx, my, 0.55);
 
-    // Target position for monster moves straight towards turret at Y = -7.0 (past the gun)
     cVector3d monsterTarget(mx * 0.6, -7.0, 0.55);
     m_monster.spawn(m_monsterSpawnPos, monsterTarget, 0.10, 0.001);
+
+    // 3. Blue Monster Spawn Point at opposite X side and staggered Y
+    m_blueMonsterSpawnPos.set(-mx, my + 1.5, 0.55);
+    cVector3d blueTarget(-mx * 0.6, -7.0, 0.55);
+    m_monsterBlue.spawn(m_blueMonsterSpawnPos, blueTarget, 0.10, 0.001);
 
     // Reset all 4 slender target panels at reflection circuit points
     cVector3d initPos[4] = {
@@ -301,13 +306,18 @@ void Game::updateLaserHitDot() {
 }
 
 void Game::randomizePlacementOnlyMonster() {
-    // Monster Spawn Point randomly across the opposite side / top area: X in [-8, 8], Y in [11, 14]
+    // Red Monster Spawn
     double mx = -8.0 + (rand() % 1600) / 100.0;
     double my = 11.0 + (rand() % 300) / 100.0;
     m_monsterSpawnPos.set(mx, my, 0.55);
 
     cVector3d monsterTarget(mx * 0.6, -7.0, 0.55);
     m_monster.spawn(m_monsterSpawnPos, monsterTarget, 0.10, 0.001);
+
+    // Blue Monster Spawn
+    m_blueMonsterSpawnPos.set(-mx, my + 1.5, 0.55);
+    cVector3d blueTarget(-mx * 0.6, -7.0, 0.55);
+    m_monsterBlue.spawn(m_blueMonsterSpawnPos, blueTarget, 0.10, 0.001);
 }
 
 void Game::fireBullet() {
@@ -372,11 +382,12 @@ void Game::update(double dt) {
         // Match duration timer
         m_gameTimer += dt;
 
-        // Update monster position & acceleration
+        // Update Red & Blue monsters position & acceleration
         m_monster.update(dt);
+        m_monsterBlue.update(dt);
 
-        // Check if monster reached Green Line in front of gun
-        if (m_monster.hasReachedDestination()) {
+        // Check if EITHER monster reached Green Line in front of gun
+        if (m_monster.hasReachedDestination() || m_monsterBlue.hasReachedDestination()) {
             m_state = STATE_GAME_OVER;
             m_endReason = "THUA CUOC! (Quai thu da toi Vach Xanh truoc sung)";
         }
@@ -441,55 +452,100 @@ void Game::checkCollisions() {
         }
     }
 
-    // 2. Check bullet collision with Monster
-    if (!m_monster.isActive()) return;
+    // 2. Check bullet collision with Red Monster
+    if (m_monster.isActive()) {
+        cVector3d monsterPos = m_monster.getPosition();
+        double monsterR = m_monster.getRadius();
 
-    cVector3d monsterPos = m_monster.getPosition();
-    double monsterR = m_monster.getRadius();
+        for (auto b : m_bullets) {
+            if (b->isActive()) {
+                cVector3d p1 = b->getPrevPosition();
+                cVector3d p2 = b->getPosition();
+                double bulletR = b->getRadius();
 
-    for (auto b : m_bullets) {
-        if (b->isActive()) {
-            cVector3d p1 = b->getPrevPosition();
-            cVector3d p2 = b->getPosition();
-            double bulletR = b->getRadius();
-
-            // Distance from monster center to bullet trajectory line segment (p1 -> p2)
-            cVector3d v = p2 - p1;
-            cVector3d w = monsterPos - p1;
-            double c1 = w.dot(v);
-            double c2 = v.dot(v);
-            double dist = 0.0;
-            if (c1 <= 0) {
-                dist = (monsterPos - p1).length();
-            } else if (c2 <= c1) {
-                dist = (monsterPos - p2).length();
-            } else {
-                double b_val = c1 / c2;
-                cVector3d pb = p1 + v * b_val;
-                dist = (monsterPos - pb).length();
-            }
-
-            double hitThreshold = monsterR + bulletR + 0.25; // 3D hit volume threshold
-
-            if (dist <= hitThreshold) {
-                // Bullet hit monster! Recycle bullet, deal 1 damage
-                b->deactivate();
-                m_score += 10;
-                m_hitVibrationTimer = 0.15;
-
-                bool killed = m_monster.takeDamage(1);
-                if (killed) {
-                    // Monster died on 10th hit! Match Victory!
-                    m_score += 100;
-                    m_monstersKilled++;
-                    m_hitVibrationTimer = 0.35;
-
-                    m_state = STATE_GAME_OVER;
-                    m_endReason = "THANG CUOC! (Da tieu diet Quai thu sau 10 phat)";
+                cVector3d v = p2 - p1;
+                cVector3d w = monsterPos - p1;
+                double c1 = w.dot(v);
+                double c2 = v.dot(v);
+                double dist = 0.0;
+                if (c1 <= 0) {
+                    dist = (monsterPos - p1).length();
+                } else if (c2 <= c1) {
+                    dist = (monsterPos - p2).length();
+                } else {
+                    double b_val = c1 / c2;
+                    cVector3d pb = p1 + v * b_val;
+                    dist = (monsterPos - pb).length();
                 }
-                break;
+
+                double hitThreshold = monsterR + bulletR + 0.25;
+
+                if (dist <= hitThreshold) {
+                    b->deactivate();
+                    m_score += 10;
+                    m_hitVibrationTimer = 0.15;
+
+                    bool killed = m_monster.takeDamage(1);
+                    if (killed) {
+                        m_score += 100;
+                        m_monstersKilled++;
+                        m_hitVibrationTimer = 0.35;
+                    }
+                    break;
+                }
             }
         }
+    }
+
+    // 3. Check bullet collision with Blue Monster
+    if (m_monsterBlue.isActive()) {
+        cVector3d monsterPos = m_monsterBlue.getPosition();
+        double monsterR = m_monsterBlue.getRadius();
+
+        for (auto b : m_bullets) {
+            if (b->isActive()) {
+                cVector3d p1 = b->getPrevPosition();
+                cVector3d p2 = b->getPosition();
+                double bulletR = b->getRadius();
+
+                cVector3d v = p2 - p1;
+                cVector3d w = monsterPos - p1;
+                double c1 = w.dot(v);
+                double c2 = v.dot(v);
+                double dist = 0.0;
+                if (c1 <= 0) {
+                    dist = (monsterPos - p1).length();
+                } else if (c2 <= c1) {
+                    dist = (monsterPos - p2).length();
+                } else {
+                    double b_val = c1 / c2;
+                    cVector3d pb = p1 + v * b_val;
+                    dist = (monsterPos - pb).length();
+                }
+
+                double hitThreshold = monsterR + bulletR + 0.25;
+
+                if (dist <= hitThreshold) {
+                    b->deactivate();
+                    m_score += 10;
+                    m_hitVibrationTimer = 0.15;
+
+                    bool killed = m_monsterBlue.takeDamage(1);
+                    if (killed) {
+                        m_score += 100;
+                        m_monstersKilled++;
+                        m_hitVibrationTimer = 0.35;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // 4. Match Victory Condition: BOTH monsters defeated!
+    if (!m_monster.isActive() && !m_monsterBlue.isActive()) {
+        m_state = STATE_GAME_OVER;
+        m_endReason = "THANG CUOC! (Da tieu diet HOAN TOAN ca 2 Quai thu Do va Xanh!)";
     }
 }
 
@@ -506,7 +562,7 @@ void Game::updateUI() {
         m_lblGameOverRestart->setShowEnabled(false);
     }
     else if (m_state == STATE_PLAYING) {
-        m_lblState->setText("COMBAT: Ban trung Quai thu 10 phat de THANG | Toi U sung thi THUA");
+        m_lblState->setText("COMBAT: Ban trung 2 Quai thu de THANG | Toi U sung thi THUA");
         m_lblState->m_fontColor.set(0.2f, 1.0f, 0.4f, 1.0f);
         m_lblGameOverTitle->setShowEnabled(false);
         m_lblGameOverScore->setShowEnabled(false);
@@ -527,7 +583,7 @@ void Game::updateUI() {
             m_lblGameOverTitle->setText("=== NGUOI CHOI THANG! (VICTORY) ===");
             m_lblGameOverTitle->m_fontColor.set(0.2f, 1.0f, 0.4f, 1.0f);
 
-            m_lblGameOverScore->setText("Ban da ban trung 10 vien dan -> Quai thu da THUA!");
+            m_lblGameOverScore->setText("Ban da tieu diet HOAN TOAN 2 Quai thu (DO & XANH)!");
             m_lblGameOverScore->m_fontColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 
             char statsBuf[128];
@@ -578,7 +634,7 @@ void Game::updateUI() {
         m_lblGameOverRestart->setLocalPos(restartX, 250);
     }
 
-    m_lblScore->setText("Diem so: " + to_string(m_score) + " | Quai thu HP: " + to_string(m_monster.getHealth()) + "/10 | Da diet: " + to_string(m_monstersKilled));
+    m_lblScore->setText("Diem: " + to_string(m_score) + " | Quai DO: " + to_string(m_monster.getHealth()) + "/10 | Quai XANH: " + to_string(m_monsterBlue.getHealth()) + "/10 | Diet: " + to_string(m_monstersKilled));
     
     char timerStr[64];
     snprintf(timerStr, sizeof(timerStr), "Thoi gian man choi: %.1f s", m_gameTimer);

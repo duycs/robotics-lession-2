@@ -51,7 +51,7 @@ Dự án game **Bảo vệ tháp 3D (3D Tower Defense)** được mô phỏng v�
 
 1. Mở terminal tại thư mục gốc của dự án:
    ```bash
-   cd /Users/duycs/Projects/github/robotics-lession-2
+   cd /robotics-lession-2
    ```
 
 2. Tạo thư mục build và cấu hình CMake:

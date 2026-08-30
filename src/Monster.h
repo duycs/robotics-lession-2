@@ -8,7 +8,7 @@ public:
     Monster();
     ~Monster();
 
-    void init(chai3d::cWorld* world);
+    void init(chai3d::cWorld* world, bool isBlue = false);
     void spawn(const chai3d::cVector3d& spawnPos, const chai3d::cVector3d& targetPos, double initialSpeed = 0.15, double accel = 0.015);
     void update(double dt);
     bool takeDamage(int damage = 1);
@@ -16,6 +16,7 @@ public:
     void cleanup();
 
     bool isActive() const { return m_active; }
+    bool isBlue() const { return m_isBlue; }
     bool hasReachedDestination() const;
     chai3d::cVector3d getPosition() const { return m_position; }
     double getRadius() const { return m_radius; }
@@ -41,6 +42,7 @@ private:
     int m_health;
     static constexpr int MAX_HEALTH = 10;
     bool m_active;
+    bool m_isBlue;
 };
 
 #endif // MONSTER_H
